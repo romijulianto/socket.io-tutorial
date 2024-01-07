@@ -64,7 +64,6 @@
     </form>
     <script src="../socket.io/socket.io.js"></script>
     <script>
-      <!-- TODO: add button disconnect -->
       const toggleButton = document.getElementById("toggle-btn");
 
       toggleButton.addEventListener("click", (e) => {
@@ -78,7 +77,11 @@
         }
       });
 
-      const socket = io();
+      const socket = io({
+        auth: {
+          serverOffset: 0,
+        },
+      });
 
       const form = document.getElementById("form");
       const input = document.getElementById("input");
@@ -92,11 +95,12 @@
         }
       });
 
-      socket.on("chat message", (msg) => {
+      socket.on("chat message", (msg, serverOffset) => {
         const item = document.createElement("li");
         item.textContent = msg;
         messages.appendChild(item);
         window.scrollTo(0, document.body.scrollHeight);
+        socket.auth.serverOffset = serverOffset;
       });
     </script>
   </body>
