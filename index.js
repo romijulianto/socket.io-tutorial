@@ -5,6 +5,22 @@ const { join } = require('node:path');
 const { Server } = require('socket.io');
 const sqlite3 = require('sqlite3');
 const { open } = require('sqlite');
+const { availableParallelism } = require('node:os');
+const cluster = require('node:cluster');
+const { createAdapter, setupPrimary } = require('@socket.io/cluster-adapter');
+
+if (cluster.isPrimary) {
+    const numCPUs = availableParallelism();
+    // create one worker per available core
+    for (let i = 0; i < numCPUs; i++) {
+        cluster.fork({
+            PORT: 4017 + i
+        });
+    }
+
+    // set up the adapter on the primary thread
+    return setupPrimary();
+}
 
 async function main() {
     const db = await open({
@@ -25,7 +41,9 @@ async function main() {
     const server = createServer(app);
     const PORT = process.env.PORT;
     const io = new Server(server, {
-        connectionStateRecovery: {}
+        connectionStateRecovery: {},
+        // set up the adapter on each worker thread
+        adapter: createAdapter()
     });
 
     app.get('/', (req, res) => {
